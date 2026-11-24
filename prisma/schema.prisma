@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Auth.js ----------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  // Guest users come from "Try the demo" and are cleaned up after a day.
+  isGuest       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  boards   Board[]
+
+  @@index([isGuest, createdAt])
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ---------- Kanban ----------
+
+model Board {
+  id        String   @id @default(cuid())
+  title     String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  columns Column[]
+  cards   Card[]
+
+  @@index([ownerId])
+}
+
+model Column {
+  id       String @id @default(cuid())
+  title    String
+  // Fractional index key (see src/lib/ordering.ts). Compared by code point.
+  position String
+  boardId  String
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@index([boardId])
+}
+
+model Card {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  // Fractional index key within the column (see src/lib/ordering.ts).
+  position    String
+  columnId    String
+  // Denormalised from the column so ownership and same-board checks are one lookup.
+  boardId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  board  Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  // Cards that must be finished before this one ("blocked by").
+  blockedBy CardDependency[] @relation("BlockedCard")
+  // Cards that this one is blocking.
+  blocking  CardDependency[] @relation("BlockerCard")
+
+  @@index([columnId])
+  @@index([boardId])
+}
+
+model CardDependency {
+  cardId    String
+  blockerId String
+
+  card    Card @relation("BlockedCard", fields: [cardId], references: [id], onDelete: Cascade)
+  blocker Card @relation("BlockerCard", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, blockerId])
+  @@index([blockerId])
+}
