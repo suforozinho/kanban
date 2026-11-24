@@ -6,9 +6,8 @@ A multi-user Kanban board with drag and drop, GitHub sign-in and card dependenci
 Next.js (App Router), TypeScript, PostgreSQL and Prisma, and tested with unit, component,
 integration and end-to-end tests in CI.
 
-<!-- TODO: replace with the Vercel URL after the first deploy -->
-
-**Live demo:** _coming soon_. Click **Try the demo** to get your own board without signing up.
+**Live demo: [kanban-opal-three-93.vercel.app](https://kanban-opal-three-93.vercel.app)**. Click
+**Try the demo** to get your own board without signing up.
 
 ![Demo board with three columns and two blocked cards](docs/board-light.png)
 
